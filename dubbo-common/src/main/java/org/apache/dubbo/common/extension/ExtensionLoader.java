@@ -70,8 +70,10 @@ public class ExtensionLoader<T> {
 
     private static final Pattern NAME_SEPARATOR = Pattern.compile("\\s*[,]+\\s*");
 
+    /** ExtensionLoader缓存 */
     private static final ConcurrentMap<Class<?>, ExtensionLoader<?>> EXTENSION_LOADERS = new ConcurrentHashMap<Class<?>, ExtensionLoader<?>>();
 
+    /** 真正需要被返回的实例缓存 */
     private static final ConcurrentMap<Class<?>, Object> EXTENSION_INSTANCES = new ConcurrentHashMap<Class<?>, Object>();
 
     // ==============================
@@ -82,12 +84,15 @@ public class ExtensionLoader<T> {
 
     private final ConcurrentMap<Class<?>, String> cachedNames = new ConcurrentHashMap<Class<?>, String>();
 
+    /** 所有的被配置的类的Class对象的缓存 */
     private final Holder<Map<String, Class<?>>> cachedClasses = new Holder<Map<String, Class<?>>>();
 
     private final Map<String, Object> cachedActivates = new ConcurrentHashMap<String, Object>();
+    /** 真正的实例的缓存对象 */
     private final ConcurrentMap<String, Holder<Object>> cachedInstances = new ConcurrentHashMap<String, Holder<Object>>();
     private final Holder<Object> cachedAdaptiveInstance = new Holder<Object>();
     private volatile Class<?> cachedAdaptiveClass = null;
+    /** SPI注解的value，在loadExtensionClasses方法中设置 */
     private String cachedDefaultName;
     private volatile Throwable createAdaptiveInstanceError;
 
@@ -112,13 +117,16 @@ public class ExtensionLoader<T> {
         if (!type.isInterface()) {
             throw new IllegalArgumentException("Extension type(" + type + ") is not interface!");
         }
+        // 判断是否被@SPI注解注释，如果没有该注解表明不是可扩展的类
         if (!withExtensionAnnotation(type)) {
             throw new IllegalArgumentException("Extension type(" + type +
                     ") is not extension, because WITHOUT @" + SPI.class.getSimpleName() + " Annotation!");
         }
 
+        // 从缓存即ConcurrentHashMap中获取ExtensionLoader
         ExtensionLoader<T> loader = (ExtensionLoader<T>) EXTENSION_LOADERS.get(type);
         if (loader == null) {
+            // 如果缓存中没有该ExtensionLoader，则创建该ExtensionLoader并放入缓存中
             EXTENSION_LOADERS.putIfAbsent(type, new ExtensionLoader<T>(type));
             loader = (ExtensionLoader<T>) EXTENSION_LOADERS.get(type);
         }
@@ -592,6 +600,7 @@ public class ExtensionLoader<T> {
             synchronized (cachedClasses) {
                 classes = cachedClasses.get();
                 if (classes == null) {
+                    // 加载所有的配置文件，只加载一次
                     classes = loadExtensionClasses();
                     cachedClasses.set(classes);
                 }
@@ -612,6 +621,7 @@ public class ExtensionLoader<T> {
                             + ": " + Arrays.toString(names));
                 }
                 if (names.length == 1) {
+                    // 设置cachedDefaultName
                     cachedDefaultName = names[0];
                 }
             }

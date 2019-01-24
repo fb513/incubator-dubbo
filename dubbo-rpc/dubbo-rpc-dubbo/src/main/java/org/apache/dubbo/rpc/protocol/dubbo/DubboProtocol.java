@@ -269,17 +269,21 @@ public class DubboProtocol extends AbstractProtocol {
             }
         }
 
+        // 启动服务器
         openServer(url);
+        // 优化序列化
         optimizeSerialization(url);
         return exporter;
     }
 
     private void openServer(URL url) {
         // find server.
+        // key为IP地址加端口号
         String key = url.getAddress();
         //client can export a service which's only for server to invoke
         boolean isServer = url.getParameter(Constants.IS_SERVER_KEY, true);
         if (isServer) {
+            // 从缓存中获取Server，如果不存在就创建Server
             ExchangeServer server = serverMap.get(key);
             if (server == null) {
                 synchronized (this) {
